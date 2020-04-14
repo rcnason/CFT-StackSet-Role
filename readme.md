@@ -1,6 +1,6 @@
 # ![CloudFormation-Icon](Images/CloudFormation-Icon.png)  AWS CloudFormation StackSet Configuration IAM Roles  
 
-![---](../../ZeroValue/SmallWhitespace.png)  
+<br />
 
 ## Description
 
@@ -12,7 +12,7 @@ Stacksets allow the ability to deploy a single AWS CloudFormation template into 
 
 ![StackSet_Template_Diagram](Images/Diagrams/CloudFormation-StackSet-Roles.png)  
 
-![---](../../ZeroValue/Whitespace.png)  
+<br />
 
 ## Pre-Requisite Templates
 
@@ -20,13 +20,13 @@ Stacksets allow the ability to deploy a single AWS CloudFormation template into 
 
 The Following Templates are Pre-Requisite Templates that are required for this template to run as they will include previously provisioned resource exports that will be consumed by this template.  
 
-![---](../../ZeroValue/SmallWhitespace.png)  
+<br />
 
 | TemplateName:  | Required Export Name  | Required Exported Resources  |
 |----------------|-----------------------|------------------------------|
 | None           | N/A                   | N/A                          |  
 
-![---](../../ZeroValue/Whitespace.png)  
+<br />
 
 ## Parameters
 
@@ -34,22 +34,22 @@ The Following Templates are Pre-Requisite Templates that are required for this t
 
 The template takes the following parameters at launch:  
 
-![---](../../ZeroValue/SmallWhitespace.png)  
+<br />
 
 ### DeployMasterRole
 
 This parameter will be used by the template to determine which role will be created in the account. The *Master* role should only be created in the account where StackSets will be launched and manged from. This typically tends to be the main billing account.  
 
-![---](../../ZeroValue/SmallWhitespace.png)  
+<br />
 
 ![DeployMasterRole_Parameter](Images/ScreenShots/CloudFormation-StackSet-MasterMemberAccountConfig-DeployMasterRole-Parameter.png)  
 
-![---](../../ZeroValue/SmallWhitespace.png)  
+<br />
 
 * If 'Yes' is chosen, then both the __AWSCloudFormationStackSetAdministrationRole__ role, and the and __AWSCloudFormationStackSetExecutionRole__ will be provisioned in the account.  
 * If 'No' is chosen, then only the __AWSCloudFormationStackSetExecutionRole__ will be provisioned in the account.  
 
-![---](../../ZeroValue/SmallWhitespace.png)  
+<br />
 
 ### StackSetAdminAccountId
 
@@ -60,7 +60,7 @@ This parameter will take an input of a 12 digit account ID of the account in whi
 * This permission will allow the admin master account to launch Stacks into via CLoudFormation StackSets.  
 * __*Example:*__ ```123456789101```  
 
-![---](../../ZeroValue/SmallWhitespace.png)  
+<br />
   
 ### MasterRegion
 
@@ -71,7 +71,7 @@ __Note: This parameter specifies the region where the roles/policies will be pro
 * This limits role duplication, ensuring that if the template is ran in a StackSet, or manually across different regions in the same account, it is only created once, but the specified outputs are still exported to all regions where the stack has been deployed, allowing subsequent templates to universally use any output export as an !ImportValues reference.
 * A template Mapping is used for the resource names to ensure consistency when exporting template output values even if the resources are not provisioned. Outputs are all manually constructed, to ensure that even if the exported resource was not provisioned, then the template does not fail due to the output export's linked resource not being provisioned.
 
-![---](../../ZeroValue/SmallWhitespace.png)  
+<br />
 
 > __You must leave the role names as they are, CloudFormation is specifically looking for these specific role names.__  
 
@@ -79,21 +79,21 @@ __Note: This parameter specifies the region where the roles/policies will be pro
 
 ![MasterRegion_Parameter](Images/ScreenShots/CloudFormation-StackSet-MasterMemberAccountConfig-MasterRegion-Parameter.png)  
 
-![---](../../ZeroValue/Whitespace.png)  
+<br />
 
 ## Example Parameter Values
 
 -----  
 
-![---](../../ZeroValue/SmallWhitespace.png)  
+<br />
 
 ![StackSet_Master_Template_Parameters](Images/ScreenShots/CloudFormation-StackSet-MasterMemberAccountConfig-MasterRole-Parameters.png)  
 
-![---](../../ZeroValue/Whitespace.png)  
+<br />
 
 ![StackSet_Member_Template_Parameters](Images/ScreenShots/CloudFormation-StackSet-MasterMemberAccountConfig-MemberRole-Parameters.png)  
 
-![---](../../ZeroValue/Whitespace.png)  
+<br />
 
 ## Resources
 
@@ -101,7 +101,7 @@ __Note: This parameter specifies the region where the roles/policies will be pro
 
 The template will create the following resources at launch (Only in the specified region that was set as the value for the ${MasterRegion} key located in the following Map *RoleMap:Metadata:MasterRegion*
 
-![---](../../ZeroValue/SmallWhitespace.png)  
+<br />
 
 ```yaml
 Mappings:
@@ -113,7 +113,7 @@ Mappings:
       MasterRegion: us-east-1
 ```
 
-![---](../../ZeroValue/SmallWhitespace.png)  
+<br />
 
 ### AWSCloudFormationStackSetAdministrationRole
 
@@ -122,11 +122,11 @@ Mappings:
 * __This IAM role will ONLY be created in the region specified and referenced by the ${MasterRegion} template parameter__. As IAM roles are global, they only need to be created in a single region, but need to be consistent across all regions where the stack has been deployed.
 * This role has a single inline policy defined that will allow this StackSet Master Admin role to assume the StackSet member execution role in any account where the member role has been provisioned.
 
-![---](../../ZeroValue/SmallWhitespace.png)  
+<br />
 
 > __NOTE: This role MUST be named *AWSCloudFormationStackSetAdministrationRole* in order for it to be acknowledged and used by CloudFormation. The CloudFormation service expects to find that specific role name, enabling StackSet member account roles to be able to be assumed by the StackSet admin account role...__
 
-![---](../../ZeroValue/SmallWhitespace.png)  
+<br />
 
 -----  
 
@@ -152,7 +152,7 @@ Mappings:
                   - arn:aws:iam::*:role/AWSCloudFormationStackSetExecutionRole
 ```  
 
-![---](../../ZeroValue/SmallWhitespace.png)  
+<br />
 
 ### AWSCloudFormationStackSetExecutionRole
 
@@ -161,11 +161,11 @@ Mappings:
 * __This IAM role will ONLY be created in the region specified and referenced by the ${MasterRegion} template parameter__. As IAM roles are global, they only need to be created in a single region, but need to be consistent across all regions where the stack has been deployed.
 * This role, once assumed by the StackSet master admin account role, will give that role Administrator Access via the member roles attached policy. This will allow the master admin role, via the assumed member role to launch any resources specified in StackSet templates that are launched via the StackSet master account role.  
 
-![---](../../ZeroValue/SmallWhitespace.png)  
+<br />
 
 > __NOTE: This role MUST be named *AWSCloudFormationStackSetExecutionRole* in order for it to be acknowledged and used by CloudFormation. The CloudFormation service expects to find that specific role name, enabling the StackSet master admin account role to assume this provisioned member role...__
 
-![---](../../ZeroValue/SmallWhitespace.png)  
+<br />
 
 -----  
 
@@ -184,7 +184,7 @@ StackSetMemberExecutionRole:
     - arn:aws:iam::aws:policy/AdministratorAccess
 ```  
 
-![---](../../ZeroValue/Whitespace.png)  
+<br />
 
 ## Exports
 
@@ -192,7 +192,7 @@ StackSetMemberExecutionRole:
 
 The following exports will be created in __ALL__ Regions:
 
-![---](../../ZeroValue/SmallWhitespace.png)  
+<br />
 
 | Output Logical ID:                      | Output:                                              | Output Value:                                                                                       | Export:                                                           |
 |---------------------------------------- |----------------------------------------------------- |---------------------------------------------------------------------------------------------------- |------------------------------------------------------------------ |
