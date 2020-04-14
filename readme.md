@@ -8,7 +8,7 @@
 
 Stacksets allow the ability to deploy a single AWS CloudFormation template into multiple accounts, or multiple regions within an account from a single template deployment within a centralized AWS *Master* account. The following CloudFormation template will create the 2 roles necessary to enable the ability to utilize stacksets. This same template can be deployed in both the master and any member accounts. Based on the values supplied for the included parameters, the template will create 1/2 roles. When the template is deployed, if the `StackSetMasterAccount` parameter is set to **Yes**, then the master stackset admin role will be created. The **master** role has a policy defined that allows the master role the permission to assume the member role in any account. If the `StackSetMasterAccount` parameter is set to **No**, then the stackset member role will be created in the account, which grants access only to the stackset master role, and will grant that role, administrator access within the account in order to allow the stackset master role, to deploy stacks within it.  
 
-![---](../../ZeroValue/Whitespace.png)
+<br />
 
 ![StackSet_Template_Diagram](Images/Diagrams/CloudFormation-StackSet-Roles.png)  
 
@@ -75,7 +75,7 @@ __Note: This parameter specifies the region where the roles/policies will be pro
 
 > __You must leave the role names as they are, CloudFormation is specifically looking for these specific role names.__  
 
-![---](../../ZeroValue/SmallWhitespace.png)
+<br />
 
 ![MasterRegion_Parameter](Images/ScreenShots/CloudFormation-StackSet-MasterMemberAccountConfig-MasterRegion-Parameter.png)  
 
