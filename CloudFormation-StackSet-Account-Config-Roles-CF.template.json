@@ -1,0 +1,343 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "AWS CloudFormation template to create CloudFormation Stackset master account and member account configuration roles required for Stackset usage.",
+    "Parameters": {
+        "DeployMasterRole": {
+            "Description": "Specify if the account where this template is being ran is the stackset master account. This means that stackset deployments will originate from this account.",
+            "Type": "String",
+            "AllowedValues": [
+                "Yes",
+                "No"
+            ],
+            "Default": "No"
+        },
+        "StackSetMasterAccountId": {
+            "Type": "String",
+            "Description": "AWS account Id of the stackset master account. (The master account in which stacksets are, or will originate, be created and be managed).",
+            "MaxLength": 12,
+            "MinLength": 12,
+            "Default": "000000000000"
+        },
+        "MasterRegion": {
+            "Description": "Specify the master region that will be used to create the role(s). For example, if us-east-1 is selected, then the role(s) will be created when executed in us-east-1, any other region execution will only create the role(s) exports.",
+            "Type": "String",
+            "AllowedValues": [
+                "us-east-1",
+                "us-east-2",
+                "us-west-1",
+                "us-west-2",
+                "us-gov-east-1",
+                "us-gov-west-1",
+                "ca-central-1",
+                "eu-central-1",
+                "eu-west-1",
+                "eu-west-2",
+                "eu-west-3",
+                "eu-north-1",
+                "ap-east-1",
+                "ap-south-1",
+                "ap-northeast-1",
+                "ap-northeast-2",
+                "ap-northeast-3",
+                "ap-southeast-1",
+                "ap-southeast-2",
+                "cn-north-1",
+                "cn-northwest-1\t",
+                "me-south-1",
+                "sa-east-1"
+            ],
+            "Default": "us-east-1"
+        }
+    },
+    "Metadata": {
+        "AWS::CloudFormation::Interface": {
+            "ParameterGroups": [
+                {
+                    "Label": {
+                        "default": "Master Region Defaults to US-EAST-1"
+                    },
+                    "Parameters": [
+                        "DeployMasterRole",
+                        "StackSetMasterAccountId",
+                        "MasterRegion"
+                    ]
+                }
+            ],
+            "ParameterLabels": {
+                "DeployMasterRole": {
+                    "default": "Is this account the StackSet Master Account?"
+                },
+                "StackSetMasterAccountId": {
+                    "default": "If this is a StackSet Member Account, then provide the 12 digit StackSet Master account number."
+                },
+                "MasterRegion": {
+                    "default": "Specify the Master Region where you prefer to deploy your roles. Roles only need to be created in a single region, as they are a global resource."
+                }
+            }
+        }
+    },
+    "Mappings": {
+        "RoleMap": {
+            "Roles": {
+                "StackSetMasterRoleName": "AWSCloudFormationStackSetAdministrationRole",
+                "StackSetMemberExecutionRoleName": "AWSCloudFormationStackSetExecutionRole"
+            },
+            "MetaData": {
+                "MasterRegion": "us-east-1"
+            }
+        }
+    },
+    "Conditions": {
+        "MasterStackSetAccount": {
+            "Fn::Equals": [
+                {
+                    "Ref": "DeployMasterRole"
+                },
+                "Yes"
+            ]
+        },
+        "CreateRole": {
+            "Fn::Equals": [
+                {
+                    "Ref": "AWS::Region"
+                },
+                {
+                    "Ref": "MasterRegion"
+                }
+            ]
+        },
+        "CreateMasterRole": {
+            "Fn::And": [
+                {
+                    "Condition": "MasterStackSetAccount"
+                },
+                {
+                    "Condition": "CreateRole"
+                }
+            ]
+        }
+    },
+    "Resources": {
+        "StackSetMasterRole": {
+            "Type": "AWS::IAM::Role",
+            "Condition": "CreateMasterRole",
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W11",
+                            "reason": "This role will have the capability to assume the StackSet Member role in any account where the member role has been provisioned."
+                        },
+                        {
+                            "id": "W28",
+                            "reason": "Roles MUST have the specified names order to allow Stacksets to be properly enabled. If these role names are not exactly as specified Stacksets will not work."
+                        }
+                    ]
+                }
+            },
+            "Properties": {
+                "RoleName": {
+                    "Fn::FindInMap": [
+                        "RoleMap",
+                        "Roles",
+                        "StackSetMasterRoleName"
+                    ]
+                },
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "cloudformation.amazonaws.com"
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Path": "/",
+                "Policies": [
+                    {
+                        "PolicyName": "AssumeStackSetMemberRole",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "sts:AssumeRole"
+                                    ],
+                                    "Resource": [
+                                        "arn:aws:iam::*:role/AWSCloudFormationStackSetExecutionRole"
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "StackSetMemberExecutionRole": {
+            "Type": "AWS::IAM::Role",
+            "DependsOn": "WaitCondition",
+            "Condition": "CreateRole",
+            "Metadata": {
+                "cfn_nag": {
+                    "rules_to_suppress": [
+                        {
+                            "id": "W28",
+                            "reason": "Roles MUST have the specified names order to allow Stacksets to be properly enabled. If these role names are not exactly as specified Stacksets will not work."
+                        }
+                    ]
+                }
+            },
+            "Properties": {
+                "RoleName": {
+                    "Fn::FindInMap": [
+                        "RoleMap",
+                        "Roles",
+                        "StackSetMemberExecutionRoleName"
+                    ]
+                },
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": {
+                                    "Fn::If": [
+                                        "MasterStackSetAccount",
+                                        {
+                                            "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:role/AWSCloudFormationStackSetAdministrationRole"
+                                        },
+                                        {
+                                            "Fn::Sub": "arn:aws:iam::${StackSetMasterAccountId}:role/AWSCloudFormationStackSetAdministrationRole"
+                                        }
+                                    ]
+                                }
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Path": "/",
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/AdministratorAccess"
+                ]
+            }
+        },
+        "NoWaitHandle": {
+            "Type": "AWS::CloudFormation::WaitConditionHandle",
+            "Condition": "CreateRole"
+        },
+        "MasterAccountWaitHandle": {
+            "Type": "AWS::CloudFormation::WaitConditionHandle",
+            "Condition": "MasterStackSetAccount",
+            "DependsOn": "StackSetMasterRole"
+        },
+        "WaitCondition": {
+            "Type": "AWS::CloudFormation::WaitCondition",
+            "Condition": "CreateRole",
+            "Properties": {
+                "Handle": {
+                    "Fn::If": [
+                        "MasterStackSetAccount",
+                        {
+                            "Ref": "MasterAccountWaitHandle"
+                        },
+                        {
+                            "Ref": "NoWaitHandle"
+                        }
+                    ]
+                },
+                "Timeout": "1",
+                "Count": 0
+            }
+        }
+    },
+    "Outputs": {
+        "CloudFormationStackSetMasterRoleName": {
+            "Condition": "CreateMasterRole",
+            "Description": "The Name of the IAM role created for the CloudFormation StackSet master deployment Account, granting assume role to the CloudFormationStackSetMemberRole in any configured account.",
+            "Value": {
+                "Fn::FindInMap": [
+                    "RoleMap",
+                    "Roles",
+                    "StackSetMasterRoleName"
+                ]
+            },
+            "Export": {
+                "Name": "AWS-CloudFormation-StackSet-Master-Administration-Role"
+            }
+        },
+        "CloudFormationStackSetMasterRoleArn": {
+            "Condition": "CreateMasterRole",
+            "Description": "The ARN of the IAM role created for the CloudFormation StackSet master deployment Account, granting assume role to the CloudFormationStackSetMemberRole in any configured account.",
+            "Value": {
+                "Fn::Join": [
+                    "",
+                    [
+                        "arn:aws:iam::",
+                        {
+                            "Ref": "AWS::AccountId"
+                        },
+                        ":role/",
+                        {
+                            "Fn::FindInMap": [
+                                "RoleMap",
+                                "Roles",
+                                "StackSetMasterRoleName"
+                            ]
+                        }
+                    ]
+                ]
+            },
+            "Export": {
+                "Name": "AWS-CloudFormation-StackSet-Master-Administration-Role-ARN"
+            }
+        },
+        "CloudFormationStackSetMemberRoleName": {
+            "Description": "The Name of the IAM role created managed member accounts. The StackSet master account will be allowed to assume and launch stacks in via StackSets.",
+            "Value": {
+                "Fn::FindInMap": [
+                    "RoleMap",
+                    "Roles",
+                    "StackSetMemberExecutionRoleName"
+                ]
+            },
+            "Export": {
+                "Name": "AWS-CloudFormation-StackSet-Member-Role"
+            }
+        },
+        "CloudFormationStackSetMemberRoleArn": {
+            "Description": "The ARN of the IAM role created managed member accounts. The StackSet master account will be allowed to assume and launch stacks in via StackSets.",
+            "Value": {
+                "Fn::Join": [
+                    "",
+                    [
+                        "arn:aws:iam::",
+                        {
+                            "Ref": "AWS::AccountId"
+                        },
+                        ":role/",
+                        {
+                            "Fn::FindInMap": [
+                                "RoleMap",
+                                "Roles",
+                                "StackSetMemberExecutionRoleName"
+                            ]
+                        }
+                    ]
+                ]
+            },
+            "Export": {
+                "Name": "AWS-CloudFormation-StackSet-Member-Role-ARN"
+            }
+        }
+    }
+}
